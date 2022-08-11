@@ -35,6 +35,7 @@ public class OrdersParsingService {
 		CompletableFuture<Void> future1 = CompletableFuture.runAsync(() -> {
 			try {	
 				
+				
 			csvFileReader(fileNames.get(0),arrayNode);
 			} catch (Exception e) {
 			e.printStackTrace();
@@ -44,7 +45,8 @@ public class OrdersParsingService {
 		CompletableFuture<Void> future2 = CompletableFuture.runAsync(() -> {
 			try {		
 			
-				readJsonFile(fileNames.get(1),arrayNode);
+				String fileName=fileNames.size()==2?fileNames.get(1):null;
+				readJsonFile(fileName,arrayNode);
 			} catch (Exception e) {
 
 				e.printStackTrace();
@@ -62,7 +64,7 @@ public class OrdersParsingService {
 	
 	
 	private void csvFileReader(String csvFileName, ArrayNode arrayNode) throws ServiceException {
-		List<Orders> OrdersList = new ArrayList<Orders>();
+		List<Orders> ordersList = new ArrayList<>();
 		InputStream inputStream = null;
 		try {
 			
@@ -74,19 +76,19 @@ public class OrdersParsingService {
 			  byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
 			    inputStream=  new ByteArrayInputStream(bdata);
 			    
-			    BufferedReader fileReader = new BufferedReader(new InputStreamReader(inputStream, "UTF-8"));
+			    BufferedReader fileReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
 			    CSVParser csvParser = new CSVParser(fileReader,CSVFormat.DEFAULT.withFirstRecordAsHeader().withIgnoreHeaderCase().withTrim());
 				Iterable<CSVRecord> csvRecords = csvParser.getRecords();
 				for (CSVRecord csvRecord : csvRecords) {
 					Orders orders = new Orders(Integer.parseInt(csvRecord.get("Order ID")),
 							Integer.parseInt(csvRecord.get("Order ID")), Long.parseLong(csvRecord.get("amount")),
 							csvRecord.get("comment"), csvRecord.getRecordNumber());
-					OrdersList.add(orders);
+					ordersList.add(orders);
 				}
 				
 				csvParser.close();
 				
-				arrayNode.addAll(converListToJson(OrdersList, csvFileName));
+				arrayNode.addAll(converListToJson(ordersList, csvFileName));
 				
 		} catch (FileNotFoundException e) {
 			throw new ServiceException("File not found: " + e.getMessage());
@@ -99,7 +101,6 @@ public class OrdersParsingService {
 	}
 
 	private ArrayNode converListToJson(List<Orders> ordersList, String fileName) throws ServiceException {
-		// TODO Auto-generated method stub
 		String csvJsonData;
 		ArrayNode nodeArray;
 		try {
@@ -112,7 +113,6 @@ public class OrdersParsingService {
 			}
 			return nodeArray;
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			throw new ServiceException("Fail to parse CSV data in json: " + e.getMessage());
 		}
 
@@ -132,8 +132,6 @@ public class OrdersParsingService {
 			String data = "";
 			byte[] bdata = FileCopyUtils.copyToByteArray(cpr.getInputStream());
 			data = new String(bdata, StandardCharsets.UTF_8);
-
-//	String jsonData = new String(Files.readAllBytes(jsonFile.toPath()));
 			nodeArray = (ArrayNode) new ObjectMapper().readTree(data);
 			int line = 0;
 			for (JsonNode node : nodeArray) {
